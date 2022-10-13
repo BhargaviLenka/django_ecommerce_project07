@@ -20,10 +20,16 @@ urlpatterns=[
     path('products/<int:product_type_id>', Product_list.as_view(), name="products_list"),
     path('product_type/', Productype.as_view(), name="products_list"),
     path('user_login/', UserLogin.as_view(), name="user_login"),
+    path('admin_login/', AdminLogin.as_view(), name="user_login"),
+    path('post_order/<int:user_id>/', Place_Order.as_view(), name="Orders_list"),
+    path('post_order/', Place_Order.as_view(), name="Orders_list"),
     path('buyers/', Buyer_List.as_view(), name="products_list"),
-    path('cart_details/<int:product_id>/<int:user_id>/', Cust_CartDetails.as_view(), name="cart_details"),
+    path('del_cart_details/<int:product_id>/<int:user_id>/<int:delete_id>/', Cust_CartDetails.as_view(), name="cart_details"),
     path('cart_details/<int:user_id>/', Cust_CartDetails.as_view(), name="cart_details"),
-    path('cart_details/<int:product_id>/<int:user_id>/<int:pro_price>', Cust_CartDetails.as_view(), name="cart_details"),
+    path('cart_details/', Cust_CartDetails.as_view(), name="cart_details"),
+    path('cart_details/<int:product_id>/<int:user_id>/<int:pro_price>/', Cust_CartDetails.as_view(), name="cart_details"),
+    path('cart_details/<int:product_id>/<int:user_id>/', Cust_CartDetails.as_view(), name="cart_details"),
     path('auth/', include('rest_framework.urls', namespace='session_auth')),
-    path('api-auth/', include('rest_framework.urls'))
+    path('api-auth/', include('rest_framework.urls')),
+    path('image_upload/', upload_image, name="image_upload")
 ]

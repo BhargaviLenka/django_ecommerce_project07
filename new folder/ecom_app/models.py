@@ -1,4 +1,7 @@
+from datetime import datetime
 from enum import unique
+
+from django.contrib.auth.base_user import AbstractBaseUser
 from django.db import models
 # from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AbstractUser,User
@@ -26,15 +29,18 @@ from django.contrib.auth.models import AbstractUser,User
 #         return self.uname
 
 
+role_choices = (
+    ('customer', 'customer'),
+    ('seller', 'seller'),
+    ('admin', 'admin'),
 
-# class User(AbstractUser):
-#     name = models.CharField(max_length=255)
-#     email = models.EmailField(max_length=255, unique=True)
-#     password = models.CharField(max_length=255)
-#     username = None
+)
 
-#     USERNAME_FIELD= 'email'
-#     REQUIRED_FIELDS= []
+# class User(AbstractBaseUser):
+#
+#     # role = models.CharField(max_length=30,choices=role_choices, default='customer')
+#     def __str__(self):
+#         return self.role
 
 class customer_details(models.Model):
     cust_id = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -67,10 +73,10 @@ class Products_Details(models.Model):
     #     return self.name
 
 class Order_list(models.Model):
-    ord1_id = models.AutoField(primary_key=True)
-    customer_id = models.ForeignKey(User, on_delete=models.CASCADE)
-    products = models.ManyToManyField(Products_Details)
-
+    # ord1_id = models.AutoField(primary_key=True)
+    # customer_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    # products = models.ManyToManyField(Products_Details)
+    date = models.DateTimeField(default=datetime.now, blank=True)
 
 
 class cart_details(models.Model):
@@ -79,7 +85,7 @@ class cart_details(models.Model):
     quantity = models.IntegerField(default=1)
     price_of_item = models.FloatField()
     amounts = models.FloatField(null=True)
-
+    order_id = models.ForeignKey(Order_list,null=True, on_delete=models.CASCADE)
 
 
 
@@ -115,7 +121,7 @@ class Product_list(models.Model):
 #     name = models.CharField(max_length=25)
 #     contact = models.IntegerField()
 #     # head_id = models.ForeignKey(Employees , on_delete=models.CASCADE)
-#     dept = models.CharField(max_length=20)
+#     dept = models.CharField(max_length=256)
 #
 #     def __str__(self):
 #         return self.name

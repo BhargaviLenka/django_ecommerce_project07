@@ -1,5 +1,6 @@
 from itertools import count
 import json
+from queue import Empty
 from rest_framework import serializers, exceptions
 from django.http.response import JsonResponse
 from django.shortcuts import render, redirect
@@ -12,16 +13,18 @@ from django.http import HttpResponse
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.contrib import messages
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
 # from ecom_app.models import Customer
 from ecom_app.serializers import CustomerSerializer, CustomerSerializerlogin, ProductListSerializer, ProductSerializer, \
-    CustomerCartSerializer, CustomerProductCartSer
+    CustomerCartSerializer, CustomerProductCartSer, OrderSerializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import permissions
 from rest_framework.viewsets import ModelViewSet
 from .renders import UserRenderer
+from cloudinary.uploader import upload
 
 
 # # Create your views here.
@@ -169,6 +172,7 @@ class Buyer_List(APIView):
 # user login
 class UserLogin(APIView):
     # renderer_classes=[UserRenderer]
+
     def post(self, request):
         username = request.data['username']
         email = request.data['email']
@@ -187,7 +191,36 @@ class UserLogin(APIView):
         return Response({'msg': "error occured"}, status=status.HTTP_400_BAD_REQUEST)
 
 
+class AdminLogin(APIView):
+    # renderer_classes=[UserRenderer]
+    # permission_classes = [IsAdminUser]
+    def get(self, request):
+        queryset = User.objects.all()
+        serializer = CustomerSerializer(queryset, many=True)
+        print(serializer.data)
+        return Response(serializer.data)
+
+    def post(self, request):
+        username = request.data['username']
+        # email = request.data['email']
+        password = request.data['password']
+        user = authenticate(username=username, password=password)
+        print(user)
+        # if user is IsAdminUser:
+
+        if user is not None and IsAdminUser:
+            print(user, user.id)
+            user_details = User.objects.get(username=username)
+
+            serializer = CustomerSerializerlogin(user_details)
+
+            return Response({'admin_id': user_details.id}, status=status.HTTP_200_OK)
+        else:
+            return Response({'msg': "error occured"}, status=status.HTTP_400_BAD_REQUEST)
+
+
 class Productype(APIView):
+    # permission_classes = [IsAuthenticated]
     def get(self, request):
         queryset = Product_Type.objects.all()
         serializer = ProductSerializer(queryset, many=True)
@@ -203,35 +236,58 @@ class Productype(APIView):
 
 
 class Cust_CartDetails(APIView):
-    def get(self, request, user_id=None ):
-        print(user_id)
-        queryset = cart_details.objects.filter(customer_id=user_id)
-        cart_array = []
-        print(queryset)
-        for each_cart in queryset:
-            # print(each_cart)
-            products_obj = Products_Details.objects.get(id=each_cart.product_id_id)
-            print(products_obj)
-            cart_array.append(products_obj)
-            # print(cart_array)
+    def get(self, request, user_id=None):
+        if user_id is None:
+            queryset = cart_details.objects.all()
+            cart_array = []
+            print(queryset)
+            for each_cart in queryset:
+                print(each_cart)
+                products_obj = Products_Details.objects.get(id=each_cart.product_id_id)
+                print(products_obj)
+                cart_array.append(products_obj)
+                print(cart_array)
+            if queryset.count == 0:
+                return Response({"value": True})
+            cartproser = CustomerProductCartSer(cart_array, many=True)
+            print(cartproser.data)
+            serializer = CustomerCartSerializer(queryset, many=True)
+            print(serializer.data)
+            return Response({"cart": serializer.data, "cartproducts": cartproser.data})
 
-        # print(cart_array)
-        cartproser = CustomerProductCartSer(cart_array, many=True)
-        # print(cartproser.data)
-        serializer = CustomerCartSerializer(queryset, many=True)
-        # print(serializer.data)
-        return Response({"cart":serializer.data, "cartproducts": cartproser.data})
+        else:
+            print(user_id)
 
-    def post(self, request, product_id=None, user_id=None, pro_price=None):
-        product=Products_Details.objects.get(id=product_id)
+            queryset = cart_details.objects.filter(customer_id=user_id)
+            cart_array = []
+            print(queryset)
+            for each_cart in queryset:
+                # print(each_cart)
+                products_obj = Products_Details.objects.get(id=each_cart.product_id_id)
+                print(products_obj)
+                cart_array.append(products_obj)
+                # print(cart_array)
+            if queryset:
+                # print(cart_array)
+                cartproser = CustomerProductCartSer(cart_array, many=True)
+                # print(cartproser.data)
+                serializer = CustomerCartSerializer(queryset, many=True)
+                # print(serializer.data)
+                return Response({"cart": serializer.data, "cartproducts": cartproser.data})
+            else:
+                return Response({"value": True})
+
+    def post(self, request, product_id=None, user_id=None, order_id=None, pro_price=None):
+        product = Products_Details.objects.get(id=product_id)
         item_price = product.price
         if not cart_details.objects.filter(customer_id=user_id, product_id=product_id).exists():
             if product_id is not None and user_id is not None:
                 serializer = CustomerCartSerializer(
                     data={
-                        "customer_id" : user_id,
-                        "product_id" : product_id,
-                        "price_of_item" : pro_price
+                        "customer_id": user_id,
+                        "product_id": product_id,
+                        "price_of_item": item_price,
+                        "order_id": order_id
                     }
                 )
                 serializer.is_valid(raise_exception=True)
@@ -252,15 +308,70 @@ class Cust_CartDetails(APIView):
             updated_serializer = CustomerCartSerializer([cart], many=True)
             return Response(updated_serializer.data)
             # return Response("serializer.data")
-    def delete(self, request, product_id=None, user_id=None, pro_price= None):
-        del_cart = cart_details.objects.get(customer_id=user_id, product_id=product_id)
-        if del_cart.quantity > 1:
-            del_cart.quantity = del_cart.quantity - 1
-            del_cart.amounts = del_cart.quantity * del_cart.price_of_item
-            del_cart.save()
-            updated_serializer = CustomerCartSerializer([del_cart], many=True)
-            return Response(updated_serializer.data)
-        if del_cart.quantity == 1:
-            del_cart.delete()
-            return Response({"msg": "item is removed"})
 
+    def delete(self, request, product_id=None, user_id=None, delete_id=None):
+        del_cart = cart_details.objects.get(customer_id=user_id, product_id=product_id)
+        print(del_cart)
+        if delete_id == 0:
+            if del_cart.quantity > 1:
+                del_cart.quantity = del_cart.quantity - 1
+                del_cart.amounts = del_cart.quantity * del_cart.price_of_item
+                del_cart.save()
+                updated_serializer = CustomerCartSerializer([del_cart], many=True)
+                return Response(updated_serializer.data)
+            if del_cart.quantity == 1:
+                del_cart.delete()
+                return Response({"msg": "item is removed"})
+        if delete_id == 1:
+            del_cart.delete()
+            return Response({"msg": "item is "})
+
+
+# class Orders_list(APIView):
+#     def post(self, request, user_id=None):
+#         # print(request.POST.get('user_id'))
+#         serializer = OrderSerializer(data={
+#          "customer_id": 1
+#         })
+#
+#         serializer.is_valid(raise_exception=True)
+#         serializer.save()
+#         return Response(serializer.data)
+#
+#     def get(self, request):
+#         queryset = Order_list.objects.all()
+#         serializer = OrderSerializer(queryset, many=True)
+#         print(serializer.data)
+#         return Response(serializer.data)
+
+
+class Place_Order(APIView):
+    def post(self, request):
+        serializer = OrderSerializers(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            print(serializer.data)
+            new_data = request.data.get('data')
+            # for cart_data in new_data:
+            #     new_serializer = CustomerCartSerializer(data={
+            #
+            #     })
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response({'msg': "error occured"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # def post(self, request):
+    #     temp = Order_list()
+    #     temp.products = request.POST.get('string')
+    #     temp.save()
+    #     return Response({'msg': "Order Placed"})
+    # def get(self, request):
+    #     queryset = Order_list.objects.all()
+
+
+def upload_image(request):
+    file = request.FILES['image']
+    image_payload = upload(file)
+    return JsonResponse({
+        'imageUrl': image_payload['secure_url']
+    })

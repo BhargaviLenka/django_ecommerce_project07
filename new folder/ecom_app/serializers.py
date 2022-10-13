@@ -1,6 +1,6 @@
 from wsgiref import validate
 from rest_framework import serializers
-from ecom_app.models import Products_Details, Product_Type, cart_details
+from ecom_app.models import Products_Details, Product_Type, cart_details, Order_list
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
 
@@ -71,3 +71,21 @@ class CustomerProductCartSer(serializers.ModelSerializer):
     class Meta:
         model = Products_Details
         fields = "__all__"
+
+
+
+
+class OrderSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Order_list
+        fields = "__all__"
+
+
+
+# class OrderSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model= Order_list
+#         fields = "__all__"
+
+
+
