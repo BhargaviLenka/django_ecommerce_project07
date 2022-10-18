@@ -1,6 +1,8 @@
 from django.urls import path,include
 from .views import *
+from .views import DeleteUser
 from rest_framework.routers import *
+# from .admin_edit_view import *
 router = DefaultRouter()
 router.register('viewset', Customer1, basename='Cust_name')
 # router.register('product', Product_list, basename='products_list')
@@ -16,8 +18,8 @@ urlpatterns=[
     path("home/", customer_list, name="customer_list"),
     path('modelview/', include(router.urls)),
     # path('modelview1/', include(router1.urls)),
-    path('products/', Product_list.as_view(), name="products_list"),
-    path('products/<int:product_type_id>', Product_list.as_view(), name="products_list"),
+    path('products/', Product_list_View.as_view(), name="products_list"),
+    path('products/<int:product_type_id>', Product_list_View.as_view(), name="products_list"),
     path('product_type/', Productype.as_view(), name="products_list"),
     path('user_login/', UserLogin.as_view(), name="user_login"),
     path('admin_login/', AdminLogin.as_view(), name="user_login"),
@@ -32,5 +34,7 @@ urlpatterns=[
     path('order_list/<int:user_id>/', Place_Order.as_view()),
     path('auth/', include('rest_framework.urls', namespace='session_auth')),
     path('api-auth/', include('rest_framework.urls')),
+    path('search/', Search.as_view(),name= 'search'),
+    path('admin_deleteuser',DeleteUser.as_view(), name='deleteuser'),
     path('image_upload/', upload_image, name="image_upload")
 ]

@@ -139,7 +139,7 @@ class Customer1(ModelViewSet):
 #     serializer.save(owner=self.request.user)
 
 
-class Product_list(APIView):
+class Product_list_View(APIView):
     def get(self, request, product_type_id=None):
         if product_type_id is None:
             queryset = Products_Details.objects.all()
@@ -381,9 +381,9 @@ class Place_Order(APIView):
 
     def post(self, request, user_id=None):
         print(user_id)
-        user= User.objects.get(id= user_id)
+        user = User.objects.get(id=user_id)
         print(user)
-        order_cart= Order_list(customer_id=user)
+        order_cart = Order_list(customer_id=user)
         order_cart.save()
         print(order_cart)
         serializer = OrderSerializers([order_cart], many=True)
@@ -406,7 +406,7 @@ class Place_Order(APIView):
             cartobj.save()
         print(querysetcart)
 
-        return Response({"msg":"success"}, status=status.HTTP_201_CREATED)
+        return Response({"msg": "success"}, status=status.HTTP_201_CREATED)
         # return Response({'msg': "error occured"}, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request, user_id=None):
@@ -448,9 +448,40 @@ class Place_Order(APIView):
     #     queryset = Order_list.objects.all()
 
 
+class Search(APIView):
+    def get(self, request):
+        q = request.GET.get('q')
+        query = Products_Details.objects.filter(name__icontains=q)
+        serializer = ProductSerializer(query, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        q = request.data.get('key')
+        query = Products_Details.objects.filter(name__icontains=q)
+        serializer = ProductSerializer(query, many=True)
+        return Response(serializer.data)
+
+
 def upload_image(request):
     file = request.FILES['image']
     image_payload = upload(file)
     return JsonResponse({
         'imageUrl': image_payload['secure_url']
     })
+
+
+# @csrf_exempt
+# class AdminDeleteUser(APIView):
+#     def get(self,request):
+#         print(request.data.get('user_id'))
+#         return Response("hii")
+#     def post(self,request):
+#         print(request.data.get('user_id'))
+#         return Response("hii")
+
+class DeleteUser(APIView):
+    def post(self, request):
+        user = request.data.get('user_id')
+        query = User.objects.get(id=user)
+        query.delete()
+        return Response({"msg": "bf"})

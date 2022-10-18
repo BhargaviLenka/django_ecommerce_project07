@@ -32,7 +32,7 @@ SECRET_KEY = 'django-insecure-9++v@yy#-uh+*1!^2u!ua0*5j6!fntj8(+-ok92-02*_g%7qrv
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 # Application definition
 
@@ -47,14 +47,14 @@ INSTALLED_APPS = [
     'rest_framework',
     'ecom_app',
     'cloudinary'
-  
+
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    # 'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -149,8 +149,14 @@ MEDIA_URL = '/media/'
 #     )
 # }
 
+CORS_ALLOW_CREDENTIALS = True
+# CSRF_TRUSTED_ORIGINS = ['http://localhost:4200']
 
-CORS_ALLOW_ALL_ORIGINS = True;
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:4200'
+]
+
+# CORS_ALLOW_ALL_ORIGINS = True;
 # Access-Control-Allow-Origin: *;
 
 
