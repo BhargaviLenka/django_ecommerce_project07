@@ -5,6 +5,8 @@ from django.contrib.auth.base_user import AbstractBaseUser
 from django.db import models
 # from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AbstractUser,User
+from django.utils import timezone
+
 # class employee(models.Model):
 #     emp_name = models.CharField(max_length=20)
 #     emp_age = models.IntegerField(default=0)
@@ -67,16 +69,17 @@ class Products_Details(models.Model):
     stock = models.IntegerField()
     product_type = models.ForeignKey(Product_Type, on_delete=models.CASCADE)
     description = models.TextField(blank=True, max_length=255, null=True)
-    image = models.ImageField(blank=True, upload_to="image", height_field=None, width_field=None, max_length=100)
+    image = models.TextField(blank=True, null=True)
 
     # def __str__(self):
     #     return self.name
 
 class Order_list(models.Model):
     # ord1_id = models.AutoField(primary_key=True)
-    # customer_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    customer_id = models.ForeignKey(User, on_delete=models.CASCADE)
     # products = models.ManyToManyField(Products_Details)
-    date = models.DateTimeField(default=datetime.now, blank=True)
+    date = models.DateTimeField(default=timezone.now, blank=True)
+    status = models.BooleanField(default=False)
 
 
 class cart_details(models.Model):
@@ -85,7 +88,7 @@ class cart_details(models.Model):
     quantity = models.IntegerField(default=1)
     price_of_item = models.FloatField()
     amounts = models.FloatField(null=True)
-    order_id = models.ForeignKey(Order_list,null=True, on_delete=models.CASCADE)
+    order_id = models.ForeignKey(Order_list, null=True, on_delete=models.CASCADE)
 
 
 

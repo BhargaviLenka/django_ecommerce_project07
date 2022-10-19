@@ -19,7 +19,7 @@ from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
 # from ecom_app.models import Customer
 from ecom_app.serializers import CustomerSerializer, CustomerSerializerlogin, ProductListSerializer, ProductSerializer, \
-    CustomerCartSerializer, CustomerProductCartSer, OrderSerializers
+    CustomerCartSerializer, CustomerProductCartSer, OrderSerializers, Order_cart_serializer
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import permissions
 from rest_framework.viewsets import ModelViewSet
@@ -139,7 +139,7 @@ class Customer1(ModelViewSet):
 #     serializer.save(owner=self.request.user)
 
 
-class Product_list(APIView):
+class Product_list_View(APIView):
     def get(self, request, product_type_id=None):
         if product_type_id is None:
             queryset = Products_Details.objects.all()
@@ -149,6 +149,10 @@ class Product_list(APIView):
             queryset = Products_Details.objects.filter(product_type=product_type_id)
             serializer = ProductListSerializer(queryset, many=True)
             return Response(serializer.data)
+    # def post(self,request):
+    #     query = request.data.get('updproduct')
+    #     query2 = request.data.get('productimg')
+    #     print(query,query2)
 
 
 # user signup
@@ -157,7 +161,7 @@ class Buyer_List(APIView):
     def get(self, request):
         queryset = User.objects.all()
         serializer = CustomerSerializer(queryset, many=True)
-        print(serializer.data)
+        # print(serializer.data)
         return Response(serializer.data)
 
     def post(self, request):
@@ -175,7 +179,7 @@ class UserLogin(APIView):
 
     def post(self, request):
         username = request.data['username']
-        email = request.data['email']
+        # email = request.data['email']
         password = request.data['password']
         user = authenticate(username=username, password=password)
         print(user)
@@ -197,7 +201,7 @@ class AdminLogin(APIView):
     def get(self, request):
         queryset = User.objects.all()
         serializer = CustomerSerializer(queryset, many=True)
-        print(serializer.data)
+        # print(serializer.data)
         return Response(serializer.data)
 
     def post(self, request):
@@ -242,31 +246,31 @@ class Cust_CartDetails(APIView):
             cart_array = []
             print(queryset)
             for each_cart in queryset:
-                print(each_cart)
+                # print(each_cart)
                 products_obj = Products_Details.objects.get(id=each_cart.product_id_id)
-                print(products_obj)
+                # print(products_obj)
                 cart_array.append(products_obj)
-                print(cart_array)
+                # print(cart_array)
             if queryset.count == 0:
                 return Response({"value": True})
             cartproser = CustomerProductCartSer(cart_array, many=True)
-            print(cartproser.data)
+            # print(cartproser.data)
             serializer = CustomerCartSerializer(queryset, many=True)
-            print(serializer.data)
+            # print(serializer.data)
             return Response({"cart": serializer.data, "cartproducts": cartproser.data})
 
         else:
             print(user_id)
             queryset = cart_details.objects.filter(customer_id=user_id)
             cart_array = []
-            cartdetailsarr=[]
-            print(queryset)
+            cartdetailsarr = []
+            # print(queryset)
             for each_cart in queryset:
-                print(each_cart)
-                print(each_cart.order_id)
+                # print(each_cart)
+                # print(each_cart.order_id)
                 if each_cart.order_id is None:
                     products_obj = Products_Details.objects.get(id=each_cart.product_id_id)
-                    print(products_obj)
+                    # print(products_obj)
                     cart_array.append(products_obj)
                     cartdetailsarr.append(each_cart)
                 else:
@@ -280,9 +284,6 @@ class Cust_CartDetails(APIView):
                 return Response({"cart": serializer.data, "cartproducts": cartproser.data})
             else:
                 return Response({"value": True})
-
-
-
 
     def post(self, request, product_id=None, user_id=None, order_id=None, pro_price=None):
         product = Products_Details.objects.get(id=product_id)
@@ -381,32 +382,66 @@ class Cust_CartDetails(APIView):
 
 class Place_Order(APIView):
     neworder_id = 0
-    def post(self, request):
-        print(request.user)
-        serializer = OrderSerializers(data=request.data)
-        neworder_id = serializer.data['id']
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            print(serializer.data)
-            # new_data = request.data.get('data')
-            print(request.data)
-            ordercartarray = request.data['cartarr']
-            print(ordercartarray)
-            querysetcart = []
-            for i in ordercartarray:
-                print(i)
-                cartobj = cart_details.objects.get(id=i)
-                cartobj.order_id = Order_list.objects.get(id=serializer.data['id'])
-                cartobj.save()
-            print(querysetcart)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response({'msg': "error occured"}, status=status.HTTP_400_BAD_REQUEST)
+
+    def post(self, request, user_id=None):
+        print(user_id)
+        user = User.objects.get(id=user_id)
+        print(user)
+        order_cart = Order_list(customer_id=user)
+        order_cart.save()
+        print(order_cart)
+        serializer = OrderSerializers([order_cart], many=True)
+        print(user_id)
+        print(serializer)
+        # if serializer.is_valid(raise_exception=True):
+        # serializer.save()
+        # neworder_id = serializer.data['id']
+        print(serializer.data)
+        # new_data = request.data.get('data')
+        print(request.data)
+        ordercartarray = request.data['cartarr']
+        print(ordercartarray)
+        querysetcart = []
+        for i in ordercartarray:
+            print(i)
+            cartobj = cart_details.objects.get(id=i)
+            print(cartobj)
+            cartobj.order_id = order_cart
+            cartobj.save()
+        print(querysetcart)
+
+        return Response({"msg": "success"}, status=status.HTTP_201_CREATED)
+        # return Response({'msg': "error occured"}, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, user_id=None):
+        # print(request.data.id)
+        print(user_id, "huygbfgj")
+        order_details = Order_list.objects.filter(customer_id=user_id)
+        cartproser = []
+        cart_array = []
+        serializer = []
+        for each_cart_product in order_details:
+            if each_cart_product.status is False:
+                ordered_products = cart_details.objects.filter(order_id=each_cart_product.id)
+                serializer = Order_cart_serializer(ordered_products, many=True)
+                cart_array.append(serializer.data)
+        return Response(cart_array)
+        #         for each_cart in ordered_products:
+        #             print(each_cart)
+        #             products_obj = Products_Details.objects.get(id=each_cart.product_id_id)
+        #             print(products_obj)
+        #             cart_array.append(products_obj)
+        #             print(cart_array)
+        #         if ordered_products.count == 0:
+        #             return Response({"value": True})
+        #     cartproser.append(CustomerProductCartSer(cart_array, many=True))
+        #     print(cartproser,"fgfcrfbb")
+        #     serializer.append(CustomerCartSerializer(ordered_products, many=True))
+        #     print(serializer)
+        # return Response({"cart": serializer, "cartproducts": cartproser})
+        # else:
+        #     pass
     # def get(self, request):
-
-
-
-
-
 
     # def post(self, request):
     #     temp = Order_list()
@@ -417,9 +452,94 @@ class Place_Order(APIView):
     #     queryset = Order_list.objects.all()
 
 
+class Search(APIView):
+    def get(self, request):
+        q = request.GET.get('q')
+        query = Products_Details.objects.filter(name__icontains=q)
+        serializer = ProductListSerializer(query, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        q = request.data.get('key')
+        query = Products_Details.objects.filter(name__icontains=q)
+        serializer = ProductListSerializer(query, many=True)
+        return Response(serializer.data)
+
+
 def upload_image(request):
-    file = request.FILES['image']
+    file = request.POST.get('image')
     image_payload = upload(file)
     return JsonResponse({
         'imageUrl': image_payload['secure_url']
     })
+
+
+class upload_pro_image(APIView):
+    def post(self, request):
+        file = request.data.get('image')
+        image_payload = upload(file)
+        return Response(
+            image_payload['secure_url']
+        )
+
+
+# @csrf_exempt
+# class AdminDeleteUser(APIView):
+#     def get(self,request):
+#         print(request.data.get('user_id'))
+#         return Response("hii")
+#     def post(self,request):
+#         print(request.data.get('user_id'))
+#         return Response("hii")
+
+class DeleteUser(APIView):
+    def post(self, request):
+        user = request.data.get('user_id')
+        query = User.objects.get(id=user)
+        query.delete()
+        return Response({"msg": "bf"})
+
+
+class AdminProductEdit(APIView):
+    def post(self, request):
+        if request.data.get('proid') != 0:
+            q = request.data.get('details')
+            r = request.data.get('productimg')
+            proid = request.data.get('proid')
+            query = Products_Details.objects.get(id=proid)
+            if r is not None:
+                query.image = r
+            query.name = q['product_name']
+            query.price = q['product_price']
+            query.stock = q['product_stock']
+            query.description = q['product_desc']
+            query.save()
+            return Response({'msg': 'success'})
+        if request.data.get('proid') ==0:
+            q = request.data.get('details')
+            r = request.data.get('productimg')
+            # query = Products_Details()
+            # query.image = r
+            # query.name = q['product_name']
+            # query.price = q['product_price']
+            # query.stock = q['product_stock']
+            # query.description = q['product_desc']
+            serializer = ProductListSerializer(data={
+                "name": q['product_name'],
+                "price": q['product_price'],
+                "stock": q['product_stock'],
+                "description": q['product_desc'],
+                "image": r,
+                "product_type": 3
+            })
+            if serializer.is_valid():
+                serializer.save()
+            return Response({'msg': 'added'})
+
+@api_view(['GET', 'POST'])
+def DeleteProductAdmin(request):
+    if request.method == "POST":
+        q = request.data.get('product_id')
+        query = Products_Details.objects.get(id=q)
+        query.delete()
+        return Response({'msg': 'Product is removed successfully'})
