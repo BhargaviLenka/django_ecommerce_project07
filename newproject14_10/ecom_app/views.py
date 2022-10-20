@@ -384,34 +384,33 @@ class Place_Order(APIView):
     neworder_id = 0
 
     def post(self, request, user_id=None):
-        print(user_id)
-        user = User.objects.get(id=user_id)
-        print(user)
-        order_cart = Order_list(customer_id=user)
-        order_cart.save()
-        print(order_cart)
-        serializer = OrderSerializers([order_cart], many=True)
-        print(user_id)
-        print(serializer)
-        # if serializer.is_valid(raise_exception=True):
-        # serializer.save()
-        # neworder_id = serializer.data['id']
-        print(serializer.data)
-        # new_data = request.data.get('data')
-        print(request.data)
-        ordercartarray = request.data['cartarr']
-        print(ordercartarray)
-        querysetcart = []
-        for i in ordercartarray:
-            print(i)
-            cartobj = cart_details.objects.get(id=i)
-            print(cartobj)
-            cartobj.order_id = order_cart
-            cartobj.save()
-        print(querysetcart)
+        if request.data.get('cartarr') is not None:
+            print(user_id)
+            user = User.objects.get(id=user_id)
+            order_cart = Order_list(customer_id=user)
+            order_cart.save()
+            serializer = OrderSerializers([order_cart], many=True)
+            print(serializer)
+            print(serializer.data)
+            print(request.data)
+            ordercartarray = request.data['cartarr']
+            print(ordercartarray)
+            querysetcart = []
+            for i in ordercartarray:
+                print(i)
+                cartobj = cart_details.objects.get(id=i)
+                print(cartobj)
+                cartobj.order_id = order_cart
+                cartobj.save()
+            print(querysetcart)
+            return Response({"msg": "success"}, status=status.HTTP_201_CREATED)
+        if request.data.get('order_id') is not None:
+            obj_id = request.data.get('order_id')
+            orderobj = Order_list.objects.get(id=obj_id)
+            orderobj.delete()
+            return Response({"msg": "deleted"})
 
-        return Response({"msg": "success"}, status=status.HTTP_201_CREATED)
-        # return Response({'msg': "error occured"}, status=status.HTTP_400_BAD_REQUEST)
+
 
     def get(self, request, user_id=None):
         # print(request.data.id)

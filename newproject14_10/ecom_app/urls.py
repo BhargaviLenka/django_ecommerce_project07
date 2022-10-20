@@ -38,5 +38,6 @@ urlpatterns=[
     path('admin_deleteuser',DeleteUser.as_view(), name='deleteuser'),
     path('changeproimage/', upload_pro_image.as_view(), name="image_upload"),
     path('updproducts/', AdminProductEdit.as_view()),
-    path('deleteproductadmin/', DeleteProductAdmin)
+    path('deleteproductadmin/', DeleteProductAdmin),
+    path('order/cancelorder', Place_Order.as_view())
 ]
