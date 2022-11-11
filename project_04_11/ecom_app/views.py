@@ -4,13 +4,15 @@ from django.http.response import JsonResponse
 from django.shortcuts import render, redirect
 from rest_framework.views import APIView
 from rest_framework import status
+
+from .manager import *
 from .models import *
 from django.http import HttpResponse
 from rest_framework.response import Response
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, logout
 from rest_framework.permissions import IsAdminUser
 from django.contrib import messages
-from ecom_app.serializers import CustomerSerializer, Customerserializerlogin, \
+from .serializers import CustomerSerializer, Customerserializerlogin, \
     ProductListSerializer, ProductSerializer, \
     CustomerCartSerializer, CustomerProductCartSer, \
     OrderSerializers, Order_cart_serializer, UserPersonalDetails
@@ -18,13 +20,16 @@ from rest_framework.decorators import api_view
 from rest_framework.viewsets import ModelViewSet
 from cloudinary.uploader import upload
 
+
 def login(request):
     """jkhnjkoj"""
     return render(request, 'login.html')
 
+
 def index(request):
     """jkhnjkoj"""
     return render(request, 'signup.html')
+
 
 def login1(request):
     """jkhnjkoj"""
@@ -40,6 +45,7 @@ def login1(request):
             return HttpResponse("Username doesn't match")
     else:
         return render(request, 'login.html')
+
 
 # def login(request):
 #     if request.method=='POST':
@@ -132,6 +138,7 @@ class Customer1(ModelViewSet):
 
 class Product_list_View(APIView):
     """jkhnjkoj"""
+
     def get(self, request, product_type_id=None):
         """jkhnjkoj"""
         if product_type_id is None:
@@ -144,11 +151,11 @@ class Product_list_View(APIView):
             return Response(serializer.data)
 
 
-
 # user signup
 class Buyer_List(APIView):
     """jkhnjkoj"""
-    def get(self):
+
+    def get(self,request):
         """jkhnjkoj"""
         queryset = User.objects.all()
         serializer = CustomerSerializer(queryset, many=True)
@@ -184,27 +191,48 @@ class Customer_Personal_det(APIView):
 class UserLogin(APIView):
     # renderer_classes=[UserRenderer]
     """jkhnjkoj"""
-    def post(self, request):
-        """jkhnjkoj"""
-        username = request.data['username']
+    print("hi")
+
+    def post(self, request, format=None):
+        """user login"""
+        print("hello")
+        # username = request.data['username']
         # email = request.data['email']
-        password = request.data['password']
-        user = authenticate(username=username, password=password)
-        print(user)
+        # password = request.data['password']
+        # user = authenticate(username=username, password=password)
+        # print(user)
+        #
+        # if user is not None:
+        #     print(user, user.id)
+        #     user_details = User.objects.get(username=username)
+        #
+        #     serializer = Customerserializerlogin(user_details)
+        #
+        #     return Response({'user_id': user_details.id}, status=status.HTTP_200_OK)
+        #
+        # return Response({'msg': "error occured"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            result = user_login(request)
+            print(result)
+            return result
+        except:
+            print("error occured")
+            return Response({"msg": "failed"})
 
-        if user is not None:
-            print(user, user.id)
-            user_details = User.objects.get(username=username)
 
-            serializer = Customerserializerlogin(user_details)
+class CookieUserdetails(APIView):
+    def post(self, request):
+        try:
+            result = user_details(request)
+            return Response(json.dumps(result))
 
-            return Response({'user_id': user_details.id}, status=status.HTTP_200_OK)
-
-        return Response({'msg': "error occured"}, status=status.HTTP_400_BAD_REQUEST)
+        except:
+            return Response(json.dumps({"msg": "cookie failed"}))
 
 
 class AdminLogin(APIView):
     """jkhnjkoj"""
+
     # renderer_classes=[UserRenderer]
     # permission_classes = [IsAdminUser]
     def get(self, request):
@@ -231,6 +259,7 @@ class AdminLogin(APIView):
 
 class Productype(APIView):
     """hello"""
+
     # permission_classes = [IsAuthenticated]
     def get(self, request):
         """jkhnjkoj"""
@@ -250,6 +279,7 @@ class Productype(APIView):
 
 class Cust_CartDetails(APIView):
     """jkhnjkoj"""
+
     def get(self, request, user_id=None):
         """jkhnjkoj"""
         print(user_id)
@@ -274,20 +304,20 @@ class Cust_CartDetails(APIView):
         if product_id:
             product = Products_Details.objects.get(id=product_id)
             item_price = product.price
-        if request.data.get('order_id') and request.data.get('product_id') and request.data.get('user_id') :
+        if request.data.get('order_id') and request.data.get('product_id') and request.data.get('user_id'):
             order_id = request.data.get('order_id')
             product_id = request.data.get('product_id')
             user_id = request.data.get('user_id')
-            print(order_id, product_id)
-            queryset = cart_details.objects.get(product_id=product_id, order_id=order_id, user_id=user_id)
+            print(order_id, product_id,user_id)
+            queryset = cart_details.objects.get(product_id=product_id, order_id=order_id, customer_id=user_id)
             queryset.delete()
             return Response({"msg": "item cancelled"})
 
         if not cart_details.objects.filter(customer_id=user_id, product_id=product_id).exists():
             if product_id is not None and user_id is not None:
-                user = User.objects.get(id= user_id)
-                product= Products_Details.objects.get(id= product_id)
-                x= cart_details(customer_id=user,product_id= product,price_of_item=item_price)
+                user = User.objects.get(id=user_id)
+                product = Products_Details.objects.get(id=product_id)
+                x = cart_details(customer_id=user, product_id=product, price_of_item=item_price)
                 x.save()
                 serializer = CustomerCartSerializer(
                     # {
@@ -311,7 +341,8 @@ class Cust_CartDetails(APIView):
             else:
                 raise exceptions.APIException('Invalid Url')
         else:
-            cart = cart_details.objects.select_related('customer_id', 'product_id').filter(customer_id=user_id, product_id=product_id)
+            cart = cart_details.objects.select_related('customer_id', 'product_id').filter(customer_id=user_id,
+                                                                                           product_id=product_id)
             print(cart)
             for cartobj in cart:
                 print(cartobj.order_id)
@@ -464,6 +495,7 @@ class Place_Order(APIView):
 
 class Search(APIView):
     """jkhnjkoj"""
+
     def get(self, request):
         """jkhnjkoj"""
         q = request.GET.get('q')
@@ -490,6 +522,7 @@ def upload_image(request):
 
 class upload_pro_image(APIView):
     """jkhnjkoj"""
+
     def post(self, request):
         """jkhnjkoj"""
         file = request.data.get('image')
@@ -510,6 +543,7 @@ class upload_pro_image(APIView):
 
 class DeleteUser(APIView):
     """jkhnjkoj"""
+
     def post(self, request):
         """jkhnjkoj"""
         user = request.data.get('user_id')
@@ -520,6 +554,7 @@ class DeleteUser(APIView):
 
 class AdminProductEdit(APIView):
     """jkhnjkoj"""
+
     def post(self, request):
         """jkhnjkoj"""
         if request.data.get('proid') != 0:
@@ -559,3 +594,25 @@ def DeleteProductAdmin(request):
         query = Products_Details.objects.get(id=q)
         query.delete()
         return Response({'msg': 'Product is removed successfully'})
+
+
+class logout_user(APIView):
+    def post(self, request):
+        # cookie_data = Response()
+        # cookie_data.set_cookie(key="access", value="", httponly=True, samesite='None')
+        # cookie_data.set_cookie(key="refresh", value="", httponly=True, samesite='None')
+        # cookie_data.set_cookie(key="username", value="", samesite='None', secure=True)
+        # cookie_data.set_cookie(key="is_admin", value="", samesite='None', secure=True)
+        # return cookie_data
+        request1 = Response()
+        print(request.COOKIES.get('access'))
+        print(request.COOKIES.get('username'))
+        print(request.COOKIES.get('refresh'))
+        request1.delete_cookie('access')
+        print(request.COOKIES.get('is_admin'))
+        request1.delete_cookie('is_admin')
+        request1.delete_cookie('refresh')
+        request1.delete_cookie('username')
+        return request1
+
+

@@ -1,6 +1,6 @@
 from wsgiref import validate
 from rest_framework import serializers
-from ecom_app.models import Products_Details, Product_Type, cart_details, Order_list, customer_details
+from .models import Products_Details, Product_Type, cart_details, Order_list, customer_details
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
 

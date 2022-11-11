@@ -1,6 +1,6 @@
 from django.contrib import admin
-from ecom_app import models
-from ecom_app.models import *
+from . import models
+from .models import *
 
 # Register your models here.
 admin.site.register(customer_details)
